@@ -1,0 +1,73 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: argo-rollouts
+  name: rollouts-reader
+rules:
+  - apiGroups: ["argoproj.io"]
+    resources: ["rollouts"]
+    verbs: ["get", "watch", "list"]
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argo-listener
+  namespace: argo-rollouts
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: read-namespaces
+  namespace: argo-rollouts
+subjects:
+  - kind: ServiceAccount
+    name: argo-listener
+    namespace: argo-rollouts
+roleRef:
+  kind: ClusterRole
+  name: rollouts-reader
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: merge-freeze
+  namespace: argo-rollouts
+type: Opaque
+data:
+  access-token: MzU1MDhiODAtZmVkYi00MjA2LWJhZDQtYzBkMzUwYWVkOTVl
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rollout-watcher
+  namespace: argo-rollouts
+spec:
+  selector:
+    matchLabels:
+      app: rollout-watcher
+  template:
+    metadata:
+      labels:
+        app: rollout-watcher
+    spec:
+      serviceAccount: argo-listener
+      containers:
+        - name: rollout-watcher
+          image: langbeck/rollouts-watcher
+          env:
+            - name: MERGE_FREEZE_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: merge-freeze
+                  key: access-token
+
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
