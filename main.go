@@ -86,7 +86,8 @@ func (w *Watcher) watchRollouts(ctx context.Context) error {
 					continue
 				}
 
-				log.Println("ADDED:", rollout.Name, rollout.Status.Phase)
+				qualifiedName := fmt.Sprintf("%s/%s", rollout.Namespace, rollout.Name)
+				log.Printf("ADDED: %-40s %s", qualifiedName, rollout.Status.Phase)
 				err := setRepositoryRolloutPhase(ctx, repository, rollout.Status.Phase)
 				if err != nil {
 					return fmt.Errorf("set repository rollout phase failed: %w", err)
@@ -99,7 +100,8 @@ func (w *Watcher) watchRollouts(ctx context.Context) error {
 					continue
 				}
 
-				log.Println("MODIFIED:", rollout.Name, rollout.Status.Phase)
+				qualifiedName := fmt.Sprintf("%s/%s", rollout.Namespace, rollout.Name)
+				log.Printf("MODIFIED: %-40s %s", qualifiedName, rollout.Status.Phase)
 				err := setRepositoryRolloutPhase(ctx, repository, rollout.Status.Phase)
 				if err != nil {
 					return fmt.Errorf("set repository rollout phase failed: %w", err)
